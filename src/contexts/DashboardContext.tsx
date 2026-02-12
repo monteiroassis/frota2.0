@@ -23,66 +23,122 @@ const initialState: DashboardData = {
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
 
-export const DashboardProvider = ({ children }: { children: ReactNode }) => {
-    const [data, setData] = useState<DashboardData>(() => {
-        const saved = localStorage.getItem("dashboardData")
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved)
+const API_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5002/api`
 
-                return {
-                    ...initialState, // Ensure all keys exist
-                    ...parsed,
-                    lastUpdated: parsed.lastUpdated ? new Date(parsed.lastUpdated) : null
-                }
-            } catch (error) {
-                console.error("Failed to parse local storage data:", error)
-            }
-        }
-        return initialState
-    })
+export const DashboardProvider = ({ children }: { children: ReactNode }) => {
+    const [data, setData] = useState<DashboardData>(initialState)
     const [isLoading, setIsLoading] = useState(false)
 
-    React.useEffect(() => {
-        localStorage.setItem("dashboardData", JSON.stringify(data))
-    }, [data])
+    // Load initial data from API
+    const refreshData = async () => {
+        setIsLoading(true)
+        try {
+            const [manifests, margins, people, vehicleStatus] = await Promise.all([
+                fetch(`${API_URL}/manifests`).then(res => res.json()),
+                fetch(`${API_URL}/margins`).then(res => res.json()),
+                fetch(`${API_URL}/people`).then(res => res.json()),
+                fetch(`${API_URL}/vehicle-status`).then(res => res.json())
+            ])
 
-    const setManifests = (manifests: Manifest[]) => {
-        setData((prev) => ({ ...prev, manifests, lastUpdated: new Date() }))
-    }
-
-    const setFreightMargins = (margins: FreightMargin[]) => {
-        setData((prev) => ({ ...prev, freightMargins: margins, lastUpdated: new Date() }))
-    }
-
-    const setPeople = (people: Person[]) => {
-        setData((prev) => ({ ...prev, people, lastUpdated: new Date() }))
-    }
-
-    const setVehicleStatus = (status: VehicleStatus[]) => {
-        setData((prev) => ({ ...prev, vehicleStatus: status, lastUpdated: new Date() }))
-    }
-
-    const refreshData = () => {
-        const saved = localStorage.getItem("dashboardData")
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved)
-                setData({
-                    ...initialState, // Ensure all keys exist
-                    ...parsed,
-                    lastUpdated: parsed.lastUpdated ? new Date(parsed.lastUpdated) : null
-                })
-            } catch (error) {
-                console.error("Failed to parse local storage data:", error)
+            setData({
+                manifests: Array.isArray(manifests) ? manifests : [],
+                freightMargins: Array.isArray(margins) ? margins : [],
+                people: Array.isArray(people) ? people : [],
+                vehicleStatus: Array.isArray(vehicleStatus) ? vehicleStatus : [],
+                lastUpdated: new Date()
+            })
+        } catch (error) {
+            console.error("Failed to fetch data from API:", error)
+            // Fallback to local storage if API fails
+            const saved = localStorage.getItem("dashboardData")
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved)
+                    setData({
+                        ...initialState,
+                        ...parsed,
+                        lastUpdated: parsed.lastUpdated ? new Date(parsed.lastUpdated) : null
+                    })
+                } catch (e) {
+                    console.error("Local storage fallback failed:", e)
+                }
             }
-        } else {
-            setData(initialState)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    React.useEffect(() => {
+        refreshData()
+    }, [])
+
+    const setManifests = async (manifests: Manifest[]) => {
+        setIsLoading(true)
+        try {
+            await fetch(`${API_URL}/manifests`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(manifests)
+            })
+            setData((prev) => ({ ...prev, manifests, lastUpdated: new Date() }))
+        } catch (error) {
+            console.error("Failed to save manifests:", error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const setFreightMargins = async (margins: FreightMargin[]) => {
+        setIsLoading(true)
+        try {
+            await fetch(`${API_URL}/margins`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(margins)
+            })
+            setData((prev) => ({ ...prev, freightMargins: margins, lastUpdated: new Date() }))
+        } catch (error) {
+            console.error("Failed to save margins:", error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const setPeople = async (people: Person[]) => {
+        setIsLoading(true)
+        try {
+            await fetch(`${API_URL}/people`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(people)
+            })
+            setData((prev) => ({ ...prev, people, lastUpdated: new Date() }))
+        } catch (error) {
+            console.error("Failed to save people:", error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const setVehicleStatus = async (status: VehicleStatus[]) => {
+        setIsLoading(true)
+        try {
+            await fetch(`${API_URL}/vehicle-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(status)
+            })
+            setData((prev) => ({ ...prev, vehicleStatus: status, lastUpdated: new Date() }))
+        } catch (error) {
+            console.error("Failed to save vehicle status:", error)
+        } finally {
+            setIsLoading(false)
         }
     }
 
     const resetData = () => {
         setData(initialState)
+        localStorage.removeItem("dashboardData")
     }
 
     return (
