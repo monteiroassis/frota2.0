@@ -1,14 +1,12 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const Manifest = require('../models/Manifest');
-const FreightMargin = require('../models/FreightMargin');
-const Person = require('../models/Person');
-const VehicleStatus = require('../models/VehicleStatus');
 
 // Manifests
 router.get('/manifests', async (req, res) => {
     try {
-        const data = await Manifest.find().sort({ createdAt: -1 });
+        const data = await req.prisma.manifest.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -17,9 +15,11 @@ router.get('/manifests', async (req, res) => {
 
 router.post('/manifests', async (req, res) => {
     try {
-        await Manifest.deleteMany({});
-        const data = await Manifest.insertMany(req.body);
-        res.json(data);
+        const result = await req.prisma.$transaction([
+            req.prisma.manifest.deleteMany({}),
+            req.prisma.manifest.createMany({ data: req.body })
+        ]);
+        res.json(result[1]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -28,7 +28,7 @@ router.post('/manifests', async (req, res) => {
 // Freight Margins
 router.get('/margins', async (req, res) => {
     try {
-        const data = await FreightMargin.find();
+        const data = await req.prisma.freightMargin.findMany();
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -37,9 +37,11 @@ router.get('/margins', async (req, res) => {
 
 router.post('/margins', async (req, res) => {
     try {
-        await FreightMargin.deleteMany({});
-        const data = await FreightMargin.insertMany(req.body);
-        res.json(data);
+        const result = await req.prisma.$transaction([
+            req.prisma.freightMargin.deleteMany({}),
+            req.prisma.freightMargin.createMany({ data: req.body })
+        ]);
+        res.json(result[1]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -48,7 +50,7 @@ router.post('/margins', async (req, res) => {
 // People
 router.get('/people', async (req, res) => {
     try {
-        const data = await Person.find();
+        const data = await req.prisma.person.findMany();
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -57,9 +59,11 @@ router.get('/people', async (req, res) => {
 
 router.post('/people', async (req, res) => {
     try {
-        await Person.deleteMany({});
-        const data = await Person.insertMany(req.body);
-        res.json(data);
+        const result = await req.prisma.$transaction([
+            req.prisma.person.deleteMany({}),
+            req.prisma.person.createMany({ data: req.body })
+        ]);
+        res.json(result[1]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -68,7 +72,7 @@ router.post('/people', async (req, res) => {
 // Vehicle Status
 router.get('/vehicle-status', async (req, res) => {
     try {
-        const data = await VehicleStatus.find();
+        const data = await req.prisma.vehicleStatus.findMany();
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -77,12 +81,14 @@ router.get('/vehicle-status', async (req, res) => {
 
 router.post('/vehicle-status', async (req, res) => {
     try {
-        await VehicleStatus.deleteMany({});
-        const data = await VehicleStatus.insertMany(req.body);
-        res.json(data);
+        const result = await req.prisma.$transaction([
+            req.prisma.vehicleStatus.deleteMany({}),
+            req.prisma.vehicleStatus.createMany({ data: req.body })
+        ]);
+        res.json(result[1]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-module.exports = router;
+export default router;

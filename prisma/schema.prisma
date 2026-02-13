@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Manifest {
+  id                 Int      @id @default(autoincrement())
+  motorista          String?
+  veiculo           String?
+  cidadeOrigem      String?
+  cidadeDestino     String?
+  receitaTransportada Float?
+  custoTotal        Float?
+  valorLucro        Float?
+  kmRodado          Float?
+  data               String?
+  cliente            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model FreightMargin {
+  id               Int      @id @default(autoincrement())
+  origem           String?
+  destino          String?
+  valorFrete       Float?
+  totalDespesas    Float?
+  margem           Float?
+  margemPercentual Float?
+  pagador          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Person {
+  id        Int      @id @default(autoincrement())
+  nome      String?
+  tipo      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VehicleStatus {
+  id        Int      @id @default(autoincrement())
+  placa     String?
+  operacao  String?
+  updated_at String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
